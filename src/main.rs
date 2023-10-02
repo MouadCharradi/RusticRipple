@@ -26,8 +26,8 @@ fn main() {
                 continue;
             }
             http_request = HTTPRequest{ method: header[0].to_owned(), path: PathBuf::from_str(header[1]).unwrap(), version: header[2].to_owned() };
-            let response = "HTTP/1.1 200 OK".to_owned();
-
+            let mut response = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
+            response.push_str(include_str!("index.html"));
             stream.write_all(response.as_bytes()).unwrap();
         }
     }
