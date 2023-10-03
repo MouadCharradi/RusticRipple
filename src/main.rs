@@ -4,18 +4,18 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{io::Read, net::TcpListener};
 
-struct HTTPRequest {
-    method: String,
+struct HTTPRequest<'a> {
+    method: &'a str,
     path: PathBuf,
-    version: String,
+    version: &'a str,
 }
 
-impl From<Vec<&str>> for HTTPRequest {
-    fn from(header: Vec<&str>) -> Self {
+impl<'a> From<Vec<&'a str>> for HTTPRequest<'a> {
+    fn from(header: Vec<&'a str>) -> Self {
         Self {
-            method: header[0].to_owned(),
+            method: header[0],
             path: PathBuf::from_str(header[1]).unwrap(),
-            version: header[2].to_owned(),
+            version: header[2],
         }
     }
 }
