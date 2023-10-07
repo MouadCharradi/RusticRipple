@@ -36,7 +36,7 @@ fn main() {
             let http_request = HTTPRequest::from(header);
         }
         let mut response = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
-        response.push_str(include_str!("index.html"));
+        response.push_str(include_str!("../public/index.html"));
         stream.write_all(response.as_bytes()).unwrap();
     }
 }
