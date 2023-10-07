@@ -1,8 +1,31 @@
 #![allow(unused, dead_code)]
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{PathBuf, Component, Path};
 use std::str::FromStr;
 use std::{io::Read, net::TcpListener};
+use std::fs;
+use std::env::current_dir;
+use extend::ext;
+
+use websocket::codec::http;
+
+#[ext]
+impl Path {
+    fn resolve_inside(&self) -> PathBuf {
+        // let new = parent.as_ref().to_path_buf();
+        let mut new = PathBuf::new();
+        for component in self.components() {
+            match component {
+                Component::ParentDir => {
+                    new.pop();
+                }
+                Component::Normal(normal) => new.push(normal),
+                _ => {}
+            }
+        }
+        new
+    }
+}
 
 struct HTTPRequest<'a> {
     method: &'a str,
@@ -14,7 +37,7 @@ impl<'a> From<Vec<&'a str>> for HTTPRequest<'a> {
     fn from(header: Vec<&'a str>) -> Self {
         Self {
             method: header[0],
-            path: PathBuf::from_str(header[1]).unwrap(),
+            path: PathBuf::from(header[1]).resolve_inside(),
             version: header[2],
         }
     }
@@ -34,9 +57,22 @@ fn main() {
                 continue;
             }
             let http_request = HTTPRequest::from(header);
+            println!("{}",http_request.path.to_str().unwrap());
+            let root = current_dir().expect("Hardcoded path should never fail").join("public");
+
+            let file = fs::read_to_string(root.join(http_request.path));
+            match file{
+                Ok(file) => {
+                    let mut response = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
+                    response.push_str(file.as_str());
+                    stream.write_all(response.as_bytes()).unwrap();
+                },
+                Err(err) => {
+                    let mut response = "HTTP/1.1 404 OK\r\n\r\n".to_owned();
+                    response.push_str(&err.to_string()[..]);
+                    stream.write_all(response.as_bytes()).unwrap();
+                }
+            }
         }
-        let mut response = "HTTP/1.1 200 OK\r\n\r\n".to_owned();
-        response.push_str(include_str!("../public/index.html"));
-        stream.write_all(response.as_bytes()).unwrap();
     }
 }
